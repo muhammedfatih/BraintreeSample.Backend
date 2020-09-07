@@ -1,0 +1,33 @@
+version: "2.1"
+services:
+    mysql:
+        image: mysql:5.7
+        hostname: mysql
+        ports:
+            - "5003:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: "1234"
+        healthcheck:
+            test: mysql --user=root --password=1234 -e 'select 1'
+            timeout: 10s
+            retries: 3
+    dotnet:
+        ports:
+            - "5001:443"
+            - "5000:80"
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+        volumes:
+            - ./BraintreeSample.API/appsettings.json:/publish/appsettings.json
+            - ./BraintreeSample.API/appsettings.development.json:/publish/appsettings.development.json
+            - ./BraintreeSample.API/appsettings.json:/app/appsettings.json
+            - ./BraintreeSample.API/appsettings.development.json:/app/appsettings.development.json
+        environment:
+            ASPNETCORE_URLS: https://localhost:5001+;http://localhost:5000+;
+            ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT-development}"
+        links:
+            - mysql
+        depends_on:
+            mysql:
+                condition: service_healthy
